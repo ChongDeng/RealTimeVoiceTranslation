@@ -1,0 +1,8 @@
+c:\users\fqyya\onedrive\documents\visual studio 2015\Projects\RealTimeTranscript\RealTimeTranscript\bin\Debug\RealTimeTranscript.exe.config
+c:\users\fqyya\onedrive\documents\visual studio 2015\Projects\RealTimeTranscript\RealTimeTranscript\bin\Debug\RealTimeTranscript.exe
+c:\users\fqyya\onedrive\documents\visual studio 2015\Projects\RealTimeTranscript\RealTimeTranscript\bin\Debug\RealTimeTranscript.pdb
+c:\users\fqyya\onedrive\documents\visual studio 2015\Projects\RealTimeTranscript\RealTimeTranscript\bin\Debug\Newtonsoft.Json.dll
+c:\users\fqyya\onedrive\documents\visual studio 2015\Projects\RealTimeTranscript\RealTimeTranscript\bin\Debug\Newtonsoft.Json.xml
+c:\users\fqyya\onedrive\documents\visual studio 2015\Projects\RealTimeTranscript\RealTimeTranscript\obj\Debug\RealTimeTranscript.exe
+c:\users\fqyya\onedrive\documents\visual studio 2015\Projects\RealTimeTranscript\RealTimeTranscript\obj\Debug\RealTimeTranscript.pdb
+C:\Users\fqyya\OneDrive\Documents\Visual Studio 2015\Projects\RealTimeTranscript\RealTimeTranscript\obj\Debug\RealTimeTranscript.csprojResolveAssemblyReference.cache
