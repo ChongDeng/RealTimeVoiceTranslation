@@ -6,6 +6,7 @@ using System.Linq;
 using System.Net.WebSockets;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -40,11 +41,25 @@ namespace RealTimeTranscript
         //The recommened size of data to be sent from client. This value is recommended by iflytek api tutorial.
         private static int CHUNCKED_SIZE = 1280;
 
+        /* This is id of iflytek App: When you create an app from iflytek console, 
+                 * you will get an app id */
+        private static String AppId = "XXX";
+
+        /* This is the secret key of iflytek realt-time transcript feature. After you create the above AppId, 
+         * there is no SECRET_KEY. So, you need to use this AppId to apply for realt-time transcript. Then, 
+         * after your application is approved, you will have this SECRET_KEY then.
+         */
+        private static String SECRET_KEY = "YYY";
+
+        private static String Translate_API_Key = "ZZZ";
+
         static void Main(string[] args)
         {
             //get real-time transcipt from pcm audio file 
             SpeechToText(PCM_AUDIO_FILE);
 
+            //Translate("床前明月光");            
+            
             Console.ReadLine();
         }
 
@@ -61,17 +76,7 @@ namespace RealTimeTranscript
 
                 //Part url of iflytek websocket server uri
                 String HOST = "rtasr.xfyun.cn/v1/ws";
-                String BASE_URL = "ws://" + HOST;
-
-                /* This is id of iflytek App: When you create an app from iflytek console, 
-                 * you will get an app id */
-                String AppId = "XXX";
-
-                /* This is the secret key of iflytek realt-time transcript feature. After you create the above AppId, 
-                 * there is no SECRET_KEY. So, you need to use this AppId to apply for realt-time transcript. Then, 
-                 * after your application is approved, you will have this SECRET_KEY then.
-                 */
-                String SECRET_KEY = "YYY";
+                String BASE_URL = "ws://" + HOST;    
 
                 //Create handshake paramerter for the following iflytek server websocket connection
                 String HandShakePara = EncryptUtil.getHandShakeParams(AppId, SECRET_KEY);
@@ -122,7 +127,11 @@ namespace RealTimeTranscript
                 else if (Response.action.Equals("result"))
                 {
                     //print transcript Chinese text
-                    Console.WriteLine(DateTime.Now.ToString("ss.fff") + "\t result: " + getTranscript(Response.data));
+                    String Transcript = getTranscript(Response.data);
+                    Console.WriteLine(DateTime.Now.ToString("ss.fff") + "\t result: " + Transcript);
+
+                    //print translate result
+                    Translate(Transcript);
                 }
 
                 //3 if Response["action"] == "error":  means server found websocket connection has got error.
@@ -307,7 +316,91 @@ namespace RealTimeTranscript
 
         public static void Translate(String Text)
         {
+            String src = "cn";
+            String to = "en";
+            String url = "http://openapi.openspeech.cn";
+            String APIKey = "98e4db853a0be99eb213ac01dd8b2991";
 
+            String x_param = Base64Encode("appid=" + AppId);
+
+            //String Signa = EncryptUtil.CreateMD5(Text + x_param + APIKey);
+            String Signa = "";
+
+            using (MD5 md5 = MD5.Create())
+            {
+                byte[] InputBytes = Encoding.UTF8.GetBytes(Text + x_param + Translate_API_Key);
+                byte[] HashBytes = md5.ComputeHash(InputBytes);
+
+                // Convert the byte array to hexadecimal string
+                StringBuilder sb = new StringBuilder();
+                for (int i = 0; i < HashBytes.Length; i++)
+                {
+                    sb.Append(HashBytes[i].ToString("x2"));
+                }
+                Signa = sb.ToString();
+            }
+
+            String Uri = "http://openapi.openspeech.cn/webapi/its.do?svc=its&token=its&from=" + src + "&to=" + to + "&q=" + Text + "&sign=" + Signa;
+            WebRequest(Uri, Text, x_param);
+
+        }
+
+        public static string Base64Encode(string plainText)
+        {
+            var plainTextBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
+            return System.Convert.ToBase64String(plainTextBytes);
+        }
+
+        public static string Base64Decode(string base64EncodedData)
+        {
+            var base64EncodedBytes = System.Convert.FromBase64String(base64EncodedData);
+            return System.Text.Encoding.UTF8.GetString(base64EncodedBytes);
+        }
+
+        private static void WebRequest(String WEBSERVICE_URL, String Text = "", String X_Para = "")
+        {            
+            try
+            {
+                var webRequest = System.Net.WebRequest.Create(WEBSERVICE_URL);
+                if (webRequest != null)
+                {
+                    webRequest.Method = "GET";
+                    //webRequest.Timeout = 12000;
+                    //webRequest.ContentType = "application/json";
+                    //webRequest.Headers.Add("Authorization", "Basic dchZ2VudDM6cGFdGVzC5zc3dvmQ=");
+                    webRequest.Headers.Add("X-Par", X_Para);
+                    webRequest.Headers.Add("Ver", "1.0");
+
+                    using (System.IO.Stream s = webRequest.GetResponse().GetResponseStream())
+                    {
+                        using (System.IO.StreamReader sr = new System.IO.StreamReader(s))
+                        {
+                            String Response = Base64Decode(sr.ReadToEnd());
+                            //Console.WriteLine(String.Format("Response: {0}", Response));
+                            try
+                            {
+                                JToken MessageObj = JObject.Parse(Response);
+                                int ret = (int)MessageObj.SelectToken("ret");
+                                if (ret == 0)
+                                {
+                                    JToken TransResultObj = MessageObj.SelectToken("trans_result");
+                                    String Result = (String) TransResultObj.SelectToken("dst");
+                                    Console.WriteLine(String.Format("\t\t\t\t" + Text + " -> " + Result));
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine("json parsing get exception: " + ex.Message);
+                            }
+                            
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
         }
     }
 }
